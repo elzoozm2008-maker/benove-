@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>موقع بيع أشياء شخصي</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        header {
+            background-color: #007bff;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 0 20px;
+        }
+        .filters {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .filters button {
+            margin: 0 10px;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        .filters button:hover {
+            background-color: #0056b3;
+        }
+        .products {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        .product-card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            overflow: hidden;
+            transition: transform 0.3s;
+        }
+        .product-card:hover {
+            transform: scale(1.05);
+        }
+        .product-card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+        .product-card h3 {
+            margin: 10px;
+            font-size: 18px;
+        }
+        .product-card p {
+            margin: 10px;
+            color: #007bff;
+            font-weight: bold;
+        }
+        .admin-panel {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .admin-panel.show {
+            display: flex;
+        }
+        .admin-form {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 400px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .admin-form input, .admin-form select, .admin-form button {
+            display: block;
+            width: 100%;
+            margin: 10px 0;
+            padding: 10px;
+        }
+        .admin-form button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        .admin-form button:hover {
+            background-color: #0056b3;
+        }
+        .open-admin {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #007bff;
+            color: white;
+            padding: 10px;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        @media (max-width: 768px) {
+            .products {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>موقع بيع أشياء شخصي</h1>
+        <p>تسوق بسهولة وأمان</p>
+    </header>
+    <div class="container">
+        <div class="filters">
+            <button onclick="filterProducts('all')">الكل</button>
+            <button onclick="filterProducts('electronics')">إلكترونيات</button>
+            <button onclick="filterProducts('clothes')">ملابس</button>
+        </div>
+        <div class="products" id="products">
+            <!-- المنتجات ستُضاف هنا عبر JS -->
+        </div>
+    </div>
+    <div class="admin-panel" id="adminPanel">
+        <div class="admin-form">
+            <h2>لوحة التحكم</h2>
+            <input type="password" id="adminPassword" placeholder="أدخل كلمة المرور">
+            <button onclick="checkPassword()">دخول</button>
+            <div id="adminControls" style="display: none;">
+                <h3>تعديل منتج موجود</h3>
+                <select id="productSelect">
+                    <!-- الخيارات ستُضاف عبر JS -->
+                </select>
+                <input type="number" id="newPrice" placeholder="السعر الجديد">
+                <input type="file" id="newImage" accept="image/*">
+                <button onclick="updateProduct()">تحديث</button>
+                
+                <h3>إضافة منتج جديد</h3>
+                <input type="text" id="newProductName" placeholder="اسم المنتج">
+                <input type="number" id="newProductPrice" placeholder="السعر">
+                <select id="newProductCategory">
+                    <option value="electronics">إلكترونيات</option>
+                    <option value="clothes">ملابس</option>
+                    <option value="other">أخرى</option>
+                </select>
+                <input type="file" id="newProductImage" accept="image/*">
+                <button onclick="addNewProduct()">إضافة المنتج</button>
+                
+                <button onclick="closeAdmin()">إغلاق</button>
+            </div>
+        </div>
+    </div>
+    <div class="open-admin" onclick="openAdmin()">⚙️</div>
+
+    <script>
+        // بيانات المنتجات الافتراضية (يمكن حفظها في LocalStorage)
+        let products = JSON.parse(localStorage.getItem('products')) || [
+            { id: 1, name: 'هاتف ذكي', price: 500, image: 'https://via.placeholder.com/250', category: 'electronics', popular: true },
+            { id: 2, name: 'قميص', price: 50, image: 'https://via.placeholder.com/250', category: 'clothes', popular: false },
+            { id: 3, name: 'لابتوب', price: 1000, image: 'https://via.placeholder.com/250', category: 'electronics', popular: true },
+            { id: 4, name: 'بنطال', price: 80, image: 'https://via.placeholder.com/250', category: 'clothes', popular: false },
+            { id: 5, name: 'سماعات', price: 100, image: 'https://via.placeholder.com/250', category: 'electronics', popular: false },
+            { id: 6, name: 'حذاء', price: 120, image: 'https://via.placeholder.com/250', category: 'clothes', popular: true }
+        ];
+
+        function renderProducts(filter = 'all') {
+            const container = document.getElementById('products');
+            container.innerHTML = '';
+            let filtered = products.filter(p => filter === 'all' || p.category === filter);
+            // عرض الأكثر مبيعاً أولاً (افتراضياً الأعلى سعراً)
+            filtered.sort((a, b) => b.price - a.price);
+            filtered.forEach(product => {
+                const card = document.createElement('div');
+                card.className = 'product-card';
+                card.innerHTML = `
+                    <img src="${product.image}" alt="${product.name}">
+                    <h3>${product.name}</h3>
+                    <p>${product.price} ريال</p>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function filterProducts(category) {
+            renderProducts(category);
+        }
+
+        function openAdmin() {
+            document.getElementById('adminPanel').classList.add('show');
+        }
+
+        function closeAdmin() {
+            document.getElementById('adminPanel').classList.remove('show');
+        }
+
+        function checkPassword() {
+            const password = document.getElementById('adminPassword').value;
+            if (password === '242008') {
+                document.getElementById('adminControls').style.display = 'block';
+                updateProductSelect();
+            } else {
+                alert('كلمة مرور خاطئة');
+            }
+        }
+
+        function updateProductSelect() {
+            const select = document.getElementById('productSelect');
+            select.innerHTML = '';
+            products.forEach(p => {
+                const option = document.createElement('option');
+                option.value = p.id;
+                option.textContent = p.name;
+                select.appendChild(option);
+            });
+        }
+
+        function updateProduct() {
+            const id = document.getElementById('productSelect').value;
+            const newPrice = document.getElementById('newPrice').value;
+            const newImageFile = document.getElementById('newImage').files[0];
+            const product = products.find(p => p.id == id);
+            if (newPrice) product.price = parseFloat(newPrice);
+            if (newImageFile) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    product.image = e.target.result;
+                    saveAndRender();
+                };
+                reader.readAsDataURL(newImageFile);
+            } else {
+                saveAndRender();
+            }
+        }
+
+        function addNewProduct() {
+            const name = document.getElementById('newProductName').value;
+            const price = document.getElementById('newProductPrice').value;
+            const category = document.getElementById('newProductCategory').value;
+            const imageFile = document.getElementById('newProductImage').files[0];
+            
+            if (!name || !price || !imageFile) {
+                alert('يرجى ملء جميع الحقول');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const newProduct = {
+                    id: Date.now(), // معرف فريد بسيط
+                    name: name,
+                    price: parseFloat(price),
+                    image: e.target.result,
+                    category: category,
+                    popular: false
+                };
+                products.push(newProduct);
+                saveAndRender();
+                updateProductSelect(); // تحديث القائمة المنسدلة
+                // مسح الحقول
+                document.getElementById('newProductName').value = '';
+                document.getElementById('newProductPrice').value = '';
+                document.getElementById('newProductImage').value = '';
+            };
+            reader.readAsDataURL(imageFile);
+        }
+
+        function saveAndRender() {
+            localStorage.setItem('products', JSON.stringify(products));
+            renderProducts();
+        }
+
+        // تحميل المنتجات عند البدء
+        renderProducts();
+    </script>
+</body>
+</html>
